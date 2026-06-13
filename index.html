@@ -604,10 +604,10 @@ let stats,tick=0,lastKey=null,game=null,sound=true,ac=null,timerRAF=null,timeSta
 function loadStats(){try{const r=localStorage.getItem(STORE_KEY);if(r)return JSON.parse(r);}catch(e){}return {facts:{},totalAttempts:0,totalCorrect:0,bestDepth:0};}
 function saveStats(){try{localStorage.setItem(STORE_KEY,JSON.stringify(stats));}catch(e){}}
 function factKey(a,b){return Math.min(a,b)+"x"+Math.max(a,b);}
-function getFact(a,b){const k=factKey(a,b);if(!stats.facts[k])stats.facts[k]={seen:0,correct:0,wrong:0,timeout:0,sumT:0,last:-999};return stats.facts[k];}
+function getFact(a,b){const k=factKey(a,b);if(!stats.facts[k])stats.facts[k]={seen:0,correct:0,wrong:0,timeout:0,slowCorrect:0,sumT:0,last:-999};return stats.facts[k];}
 function allPairs(){const o=[];for(let a=LOW;a<=HIGH;a++)for(let b=a;b<=HIGH;b++)o.push([a,b]);return o;}
 function weakness(a,b){const f=getFact(a,b);if(f.seen===0)return 3.0;
-  const wr=(f.wrong+f.timeout)/f.seen;const avg=f.correct>0?f.sumT/f.correct:SLOW_MS;
+  const wr=(f.wrong+f.timeout+f.slowCorrect)/f.seen;const avg=f.correct>0?f.sumT/f.correct:SLOW_MS;
   const slow=Math.max(0,Math.min(1,(avg-FAST_MS)/(SLOW_MS-FAST_MS)));const rec=Math.max(0,Math.min(1,(tick-f.last)/12));
   const mast=f.correct>=3&&wr<0.2&&avg<FAST_MS;let s=0.6+4.2*wr+2.0*slow+0.6*rec;if(mast)s*=0.18;return Math.max(0.05,s);}
 function pickFact(boss){const P=allPairs();const uc=(stats.totalAttempts<SAMPLE_N)?1:(boss?0.15:0.35);let ch;
@@ -707,7 +707,7 @@ function answer(choice,btn){
   if(locked)return;locked=true;stopTimer();
   const el=performance.now()-game.qStart;const f=game.q.key.split("x").map(Number);const fact=getFact(f[0],f[1]);
   fact.seen++;fact.last=tick;tick++;stats.totalAttempts++;
-  if(choice.ok){fact.correct++;fact.sumT+=Math.min(el,SLOW_MS*1.5);stats.totalCorrect++;btn.classList.add("correct");saveStats();correctHit();}
+  if(choice.ok){fact.correct++;fact.sumT+=Math.min(el,SLOW_MS*1.5);stats.totalCorrect++;btn.classList.add("correct");if(el>timeLimit*0.75)fact.slowCorrect++;saveStats();correctHit();}
   else{fact.wrong++;btn.classList.add("wrong");revealCorrect();saveStats();wrongHit(false);}
 }
 function onTimeout(){if(locked)return;locked=true;stopTimer();
