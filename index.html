@@ -30,7 +30,7 @@
   }
   .screen{position:absolute; inset:0; display:none; flex-direction:column}
   .screen.on{display:flex}
-  .center{align-items:center; justify-content:center; text-align:center; gap:18px; padding:26px}
+  .center{align-items:center; justify-content:center; text-align:center; gap:18px; padding:26px; overflow-y:auto}
 
   h1{font-weight:800; font-size:44px; line-height:1.05; text-shadow:0 4px 0 rgba(0,0,0,.4)}
   h1 .gold{color:var(--gold)}
@@ -107,6 +107,8 @@
   .cards{display:flex; gap:18px; flex-wrap:wrap; justify-content:center}
   .card{width:200px; background:#211c3a; border:3px solid #3a3560; padding:20px 14px; cursor:pointer;
     box-shadow:inset 0 3px 0 #56507e, 0 6px 0 #0a0814; transition:transform .1s}
+  .shopclose{position:absolute; top:14px; right:14px; z-index:10; background:#0e0b1f; border:2px solid #3a3560; color:#fff; font-size:22px; width:42px; height:42px; cursor:pointer; font-family:var(--pixel)}
+  .shopclose:hover{border-color:var(--red); color:var(--red)}
   .card:hover{transform:translateY(-6px); border-color:var(--gold)}
   .card.disabled{opacity:.42; cursor:default}
   .card.disabled:hover{transform:none; border-color:#3a3560}
@@ -190,6 +192,7 @@
   </section>
 
   <section id="s-shop" class="screen center">
+    <button class="shopclose" id="shopCloseBtn" title="Đóng cửa hàng">✕</button>
     <h1 style="font-size:32px">🛒 Cửa Hàng Dũng Sĩ</h1>
     <div class="badge" style="font-size:18px"><span class="lab">XU CÓ</span><span id="shopCoin">0</span></div>
     <div class="cards" id="shopCards"></div>
@@ -855,6 +858,7 @@ $("restBtn").onclick=()=>{sfx.click();showEnd(true);};
 $("shopBtnReward").onclick=()=>{sfx.click();openShop("s-reward");};
 $("shopBtnHang").onclick=()=>{sfx.click();openShop("s-hang");};
 $("shopBackBtn").onclick=()=>{sfx.click();show(game.shopReturn);};
+$("shopCloseBtn").onclick=()=>{sfx.click();show(game.shopReturn);};
 $("muteBtn").onclick=()=>{sound=!sound;$("muteBtn").textContent=sound?"🔊":"🔇";if(sound)sfx.click();};
 $("resetLink").onclick=()=>{if(confirm("Xoá toàn bộ tiến trình học của bé?")){localStorage.removeItem(STORE_KEY);stats=loadStats();alert("Đã xoá. Bắt đầu lại từ đầu nhé!");}};
 
