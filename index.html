@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -752,11 +753,12 @@ function monsterDefeated(){
 function rewardScreen(){
   show("s-reward");
   let pool=[{id:"heal",e:"❤",t:"Hồi 1 Tim",d:"Khoẻ lại chiến tiếp"},
-    {id:"shield",e:"🛡",t:"Khiên Đỡ Đòn",d:"Chặn 1 lần trả lời sai"},
+    {id:"shield",e:"🛡",t:"Khiên Đỡ Đòn",d:"Chặn 1 lần trả lời sai (tối đa 2)"},
     {id:"coins",e:"🪙",t:"+20 Xu",d:"Thêm điểm thưởng"},
     {id:"time",e:"⏳",t:"+1 Giây/câu",d:"Có thêm thời gian"},
     {id:"maxhp",e:"💖",t:"+1 Tim Tối Đa",d:"Hồi đầy luôn"}];
   if(game.maxHp>=MAX_HP) pool=pool.filter(r=>r.id!=="maxhp");
+  if(game.shields>=2) pool=pool.filter(r=>r.id!=="shield");
   const two=shuffle([...pool]).slice(0,2);const box=$("rewardCards");box.innerHTML="";
   two.forEach(r=>{const c=document.createElement("div");c.className="card";
     c.innerHTML=`<div class="emoji">${r.e}</div><div class="ct">${r.t}</div><div class="cd">${r.d}</div>`;
@@ -764,8 +766,10 @@ function rewardScreen(){
 }
 function applyReward(id){
   if(id==="heal")game.hp=Math.min(game.maxHp,game.hp+1);
-  else if(id==="shield")game.shields++;else if(id==="coins")game.coins+=20;
-  else if(id==="time")game.timeBonus+=1000;else if(id==="maxhp"){game.maxHp=Math.min(MAX_HP,game.maxHp+1);game.hp=game.maxHp;}
+  else if(id==="shield"){if(game.shields<2)game.shields++;}
+  else if(id==="coins")game.coins+=20;
+  else if(id==="time")game.timeBonus+=1000;
+  else if(id==="maxhp"){game.maxHp=Math.min(MAX_HP,game.maxHp+1);game.hp=game.maxHp;}
   renderTop();show("s-game");startRoom();
 }
 function hangCleared(){
@@ -778,8 +782,8 @@ function hangCleared(){
 const SHOP_ITEMS=[
  {id:"sword",e:"⚔️",t:"Kiếm Thần",d:"Mỗi đòn chém gây 2 sát thương (nâng 1 lần)",price:300,
    maxed:()=>game.swordLevel>=1, label:()=>game.swordLevel>=1?"✅ Đã trang bị":"300 🪙"},
- {id:"shield",e:"🛡",t:"Khiên Phép",d:"Đỡ 1 lần trả lời sai (mua nhiều lần)",price:100,
-   maxed:()=>false, label:()=>`Đang có: ${game.shields}  ·  100 🪙`},
+ {id:"shield",e:"🛡",t:"Khiên Phép",d:"Đỡ 1 lần trả lời sai (tối đa 2 khiên)",price:100,
+   maxed:()=>game.shields>=2, label:()=>game.shields>=2?`✅ Tối đa (${game.shields}/2)`:`Đang có: ${game.shields}/2  ·  100 🪙`},
  {id:"heal",e:"💖",t:"Bùa Hồi Phục",d:"Hồi thêm 1 máu mỗi khi qua hang mới (mua nhiều lần)",price:100,
    maxed:()=>false, label:()=>`Hồi thêm: +${game.healLevel}  ·  100 🪙`}
 ];
@@ -799,7 +803,7 @@ function renderShop(){
 function buyItem(it){
   game.coins-=it.price;
   if(it.id==="sword")game.swordLevel=1;
-  else if(it.id==="shield")game.shields++;
+  else if(it.id==="shield"){if(game.shields<2)game.shields++;}
   else if(it.id==="heal")game.healLevel++;
   renderTop(); renderShop();
 }
