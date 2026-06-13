@@ -640,6 +640,70 @@ const sfx={click:()=>tone(520,.08,"square",.12),
   win:()=>{[523,659,784,1047].forEach((f,i)=>tone(f,.18,"triangle",.22,i*.12));},
   lose:()=>{[392,330,262,196].forEach((f,i)=>tone(f,.22,"sine",.22,i*.14));}};
 
+//==================== MUSIC ====================
+let musicOn=false,musicNext=0,musicTimer=null;
+function startMusic(){
+  if(!ac) initAudio();
+  if(!ac||musicOn) return;
+  musicOn=true; scheduleMusic();
+}
+function stopMusic(){
+  musicOn=false;
+  if(musicTimer){clearTimeout(musicTimer);musicTimer=null;}
+}
+function mnote(f,t,d,type,vol){
+  if(!ac) return;
+  const o=ac.createOscillator(),g=ac.createGain();
+  o.type=type;o.frequency.value=f;
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.02);
+  g.gain.exponentialRampToValueAtTime(.001,t+d);
+  o.connect(g).connect(ac.destination);
+  o.start(t);o.stop(t+d+.03);
+}
+function noise(t,d,vol){
+  if(!ac) return;
+  const len=ac.sampleRate*d,buf=ac.createBuffer(1,len,ac.sampleRate);
+  const data=buf.getChannelData(0);
+  for(let i=0;i<len;i++) data[i]=(Math.random()*2-1)*vol;
+  const src=ac.createBufferSource();src.buffer=buf;
+  const g=ac.createGain(),f=ac.createBiquadFilter();
+  f.type="highpass";f.frequency.value=2000;
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+d);
+  src.connect(f).connect(g).connect(ac.destination);
+  src.start(t);src.stop(t+d+.01);
+}
+function scheduleMusic(){
+  if(!musicOn||!ac||!sound) return;
+  const now=ac.currentTime;if(musicNext<now) musicNext=now;
+  const beat=0.545,barLen=beat*4,end=musicNext+barLen*8;
+  for(let t=musicNext;t<end;t+=beat){
+    noise(t,0.06,0.12);
+    if(Math.floor((t-musicNext)/barLen)%2===0) noise(t,0.08,0.22);
+  }
+  const bassPat=[65.41,98.00,65.41,98.00,103.83,77.78,116.54,98.00];
+  for(let i=0;musicNext+i*beat<end;i++){
+    const b=bassPat[i%8],t=musicNext+i*beat;
+    mnote(b,t,beat*0.85,"triangle",0.18);
+    mnote(b*2,t+.01,beat*0.3,"square",0.04);
+  }
+  const chords=[[65.41,77.78,98.00],[77.78,93.33,116.54],[87.31,103.83,130.81],[98.00,116.54,146.83]];
+  for(let bar=0;bar<8;bar++){
+    const [r,third,fifth]=chords[bar%4],t=musicNext+bar*barLen;
+    mnote(r*2,t,barLen*0.7,"triangle",0.07);
+    mnote(third*2,t+.03,barLen*0.65,"triangle",0.05);
+    mnote(fifth*2,t+.06,barLen*0.6,"triangle",0.04);
+  }
+  const scale=[261.63,277.18,311.13,349.23,392.00,415.30,466.16,523.25];
+  let mi=0;
+  for(let t=musicNext;t<end;t+=beat*0.5){
+    const step=mi%16;let idx=step<8?step:16-step;
+    idx=Math.min(7,Math.max(0,idx+((mi/16|0)%4-1)));
+    mnote(scale[idx],t,beat*0.4,"square",0.06);
+    mi++;
+  }
+  musicNext=end;musicTimer=setTimeout(scheduleMusic,barLen*7*1000);
+}
+
 //==================== SCREENS ====================
 const screens=["s-start","s-game","s-reward","s-hang","s-shop","s-end","s-victory"];
 function show(id){screens.forEach(s=>document.getElementById(s).classList.toggle("on",s===id));}
@@ -807,7 +871,7 @@ function buyItem(it){
   else if(it.id==="heal")game.healLevel++;
   renderTop(); renderShop();
 }
-function gameOver(){sfx.lose();if(game.depth>stats.bestDepth){stats.bestDepth=game.depth;saveStats();}showEnd(false);}
+function gameOver(){sfx.lose();stopMusic();if(game.depth>stats.bestDepth){stats.bestDepth=game.depth;saveStats();}showEnd(false);}
 
 function tableWeakness(){
   const scores=[];
@@ -842,7 +906,7 @@ function showEnd(rested){
   $("report").innerHTML=buildReportHTML();
 }
 function victory(){
-  sfx.win();game.coins+=100;
+  sfx.win();stopMusic();game.coins+=100;
   if(game.depth>=stats.bestDepth){stats.bestDepth=game.depth;saveStats();}
   show("s-victory");
   const acc=stats.totalAttempts?Math.round(100*stats.totalCorrect/stats.totalAttempts):0;
@@ -854,7 +918,7 @@ let toastT=null;
 function showToast(t,c){const e=$("toast");e.textContent=t;e.className="toast show "+c;clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove("show"),900);}
 
 //==================== EVENTS ====================
-$("startBtn").onclick=()=>{initAudio();sfx.click();newGame();};
+$("startBtn").onclick=()=>{initAudio();sfx.click();startMusic();newGame();};
 $("againBtn").onclick=()=>{sfx.click();newGame();};
 $("newRunBtn").onclick=()=>{sfx.click();newGame();};
 $("deeperBtn").onclick=()=>{sfx.click();game.hp=Math.min(game.maxHp,MAX_HP,game.hp+1+game.healLevel);renderTop();startHang();};
@@ -863,7 +927,7 @@ $("shopBtnReward").onclick=()=>{sfx.click();openShop("s-reward");};
 $("shopBtnHang").onclick=()=>{sfx.click();openShop("s-hang");};
 $("shopBackBtn").onclick=()=>{sfx.click();show(game.shopReturn);};
 $("shopCloseBtn").onclick=()=>{sfx.click();show(game.shopReturn);};
-$("muteBtn").onclick=()=>{sound=!sound;$("muteBtn").textContent=sound?"🔊":"🔇";if(sound)sfx.click();};
+$("muteBtn").onclick=()=>{sound=!sound;$("muteBtn").textContent=sound?"🔊":"🔇";if(sound){sfx.click();startMusic();}else stopMusic();};
 $("resetLink").onclick=()=>{if(confirm("Xoá toàn bộ tiến trình học của bé?")){localStorage.removeItem(STORE_KEY);stats=loadStats();alert("Đã xoá. Bắt đầu lại từ đầu nhé!");}};
 
 //==================== INIT ====================
