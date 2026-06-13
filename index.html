@@ -734,7 +734,7 @@ function startRoom(){
       sprite:isFinal?"dragon":rand(BOSS_MONS),timed:true};
   }else{
     const hp=Math.min(1+Math.floor((game.depth-1)/3),3);
-    game.monster={boss:false,isFinal:false,hp,maxHp:hp,name:rand(MON_NAMES),sprite:rand(NORMAL_MONS),timed:game.room>0};
+    game.monster={boss:false,isFinal:false,hp,maxHp:hp,name:rand(MON_NAMES),sprite:rand(NORMAL_MONS),timed:true};
   }
   renderMonster(); nextQuestion();
 }
@@ -754,7 +754,7 @@ function nextQuestion(){
   $("question").innerHTML=q.text;
   const box=$("answers"); box.innerHTML="";
   q.choices.forEach(c=>{const b=document.createElement("button");b.className="ans";b.textContent=c.v;b.onclick=()=>answer(c,b);box.appendChild(b);});
-  if(game.monster.timed){timeLimit=Math.max(4000,9000-(game.depth-1)*500)+(q.isWeak?2000:0)+game.timeBonus;startTimer();}
+  if(game.monster.timed){timeLimit=Math.max(4000,9000-(game.depth-1)*500)+(q.isWeak?2000:0)+game.timeBonus;if(game.room===0&&!game.bossMode)timeLimit*=2.5;startTimer();}
   else{$("timebar").style.width="100%";$("timebar").classList.remove("low");stopTimer();}
   game.qStart=performance.now();
 }
