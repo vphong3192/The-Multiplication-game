@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -138,7 +139,7 @@
   <section id="s-start" class="screen on center">
     <canvas id="logoHero" style="height:150px"></canvas>
     <h1>Dũng Sĩ <span class="gold">Cửu Chương</span></h1>
-    <p class="sub">Trả lời đúng phép nhân để chém quái. Tính sai thì bị quái đớp! Hãy xông pha thật sâu vào hang ngục.</p>
+    <p class="sub">Trả lời đúng phép nhân &amp; chia để chém quái. Tính sai thì bị quái đớp! Hãy xông pha thật sâu vào hang ngục.</p>
     <button class="btn" id="startBtn">⚔ Bắt đầu phiêu lưu</button>
     <a class="tiny" id="resetLink">Xoá tiến trình học</a>
   </section>
@@ -616,13 +617,24 @@ function pickFact(boss){const P=allPairs();const uc=(stats.totalAttempts<SAMPLE_
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function uniq(a){return [...new Set(a)];}
 function buildQuestion(){const [x,y]=pickFact(game.bossMode);let a=x,b=y;if(Math.random()<0.5){a=y;b=x;}const p=a*b;
-  const type=Math.random()<0.4?"blank":"result";let text,correct,dis;
-  if(type==="result"){text=`${a} × ${b} = <span class="blank">?</span>`;correct=p;
-    let c=uniq([p+a,p-a,p+b,p-b,(a+1)*b,(a-1)*b,a*(b+1),a*(b-1),p+1,p-1]).filter(v=>v>0&&v!==p);
-    dis=shuffle(c).slice(0,3);while(dis.length<3){const v=p+(Math.floor(Math.random()*7)-3);if(v>0&&v!==p&&!dis.includes(v))dis.push(v);}
-  }else{if(Math.random()<0.5){text=`${a} × <span class="blank">?</span> = ${p}`;correct=b;}else{text=`<span class="blank">?</span> × ${b} = ${p}`;correct=a;}
-    let c=uniq([correct-1,correct+1,correct-2,correct+2]).filter(v=>v>=2&&v<=HIGH+1&&v!==correct);
-    dis=shuffle(c).slice(0,3);while(dis.length<3){const v=2+Math.floor(Math.random()*HIGH);if(v!==correct&&!dis.includes(v))dis.push(v);}}
+  const isDivision=Math.random()<0.4;let text,correct,dis;
+  if(isDivision){
+    const divType=Math.floor(Math.random()*4);
+    if(divType===0){text=`${p} ÷ ${a} = <span class="blank">?</span>`;correct=b;}
+    else if(divType===1){text=`${p} ÷ ${b} = <span class="blank">?</span>`;correct=a;}
+    else if(divType===2){text=`${p} ÷ <span class="blank">?</span> = ${a}`;correct=b;}
+    else{text=`${p} ÷ <span class="blank">?</span> = ${b}`;correct=a;}
+    let c=uniq([correct-1,correct+1,correct-2,correct+2,correct-3,correct+3]).filter(v=>v>=2&&v<=HIGH&&v!==correct);
+    dis=shuffle(c).slice(0,3);while(dis.length<3){const v=2+Math.floor(Math.random()*HIGH);if(v!==correct&&!dis.includes(v))dis.push(v);}
+  }else{
+    const type=Math.random()<0.4?"blank":"result";
+    if(type==="result"){text=`${a} × ${b} = <span class="blank">?</span>`;correct=p;
+      let c=uniq([p+a,p-a,p+b,p-b,(a+1)*b,(a-1)*b,a*(b+1),a*(b-1),p+1,p-1]).filter(v=>v>0&&v!==p);
+      dis=shuffle(c).slice(0,3);while(dis.length<3){const v=p+(Math.floor(Math.random()*7)-3);if(v>0&&v!==p&&!dis.includes(v))dis.push(v);}
+    }else{if(Math.random()<0.5){text=`${a} × <span class="blank">?</span> = ${p}`;correct=b;}else{text=`<span class="blank">?</span> × ${b} = ${p}`;correct=a;}
+      let c=uniq([correct-1,correct+1,correct-2,correct+2]).filter(v=>v>=2&&v<=HIGH+1&&v!==correct);
+      dis=shuffle(c).slice(0,3);while(dis.length<3){const v=2+Math.floor(Math.random()*HIGH);if(v!==correct&&!dis.includes(v))dis.push(v);}}
+  }
   const choices=shuffle([{v:correct,ok:true},...dis.map(v=>({v,ok:false}))]);
   return {key:factKey(x,y),text,choices,isWeak:weakness(x,y)>2.5};}
 
