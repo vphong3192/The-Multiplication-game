@@ -141,7 +141,6 @@
     <h1>Dũng Sĩ <span class="gold">Cửu Chương</span></h1>
     <p class="sub">Trả lời đúng phép nhân &amp; chia để chém quái. Tính sai thì bị quái đớp! Hãy xông pha thật sâu vào hang ngục.</p>
     <button class="btn" id="startBtn">⚔ Bắt đầu phiêu lưu</button>
-    <a class="tiny" id="resetLink">Xoá tiến trình học</a>
   </section>
 
   <section id="s-game" class="screen">
@@ -598,11 +597,11 @@ function placeGlows(){
 }
 
 //==================== ENGINE (adaptive) ====================
-const LOW=2,HIGH=9,FAST_MS=3500,SLOW_MS=8000,SAMPLE_N=6,STORE_KEY="dscc_stats_v2",TOTAL_HANGS=10,MAX_HP=6;
+const LOW=2,HIGH=9,FAST_MS=3500,SLOW_MS=8000,SAMPLE_N=6,TOTAL_HANGS=10,MAX_HP=6;
 let stats,tick=0,lastKey=null,game=null,sound=true,ac=null,timerRAF=null,timeStart=0,timeLimit=0,locked=false;
 
-function loadStats(){try{const r=localStorage.getItem(STORE_KEY);if(r)return JSON.parse(r);}catch(e){}return {facts:{},totalAttempts:0,totalCorrect:0,bestDepth:0};}
-function saveStats(){try{localStorage.setItem(STORE_KEY,JSON.stringify(stats));}catch(e){}}
+function loadStats(){return {facts:{},totalAttempts:0,totalCorrect:0,bestDepth:0};}
+function saveStats(){}
 function factKey(a,b){return Math.min(a,b)+"x"+Math.max(a,b);}
 function getFact(a,b){const k=factKey(a,b);if(!stats.facts[k])stats.facts[k]={seen:0,correct:0,wrong:0,timeout:0,slowCorrect:0,sumT:0,last:-999};return stats.facts[k];}
 function allPairs(){const o=[];for(let a=LOW;a<=HIGH;a++)for(let b=a;b<=HIGH;b++)o.push([a,b]);return o;}
@@ -723,6 +722,7 @@ function rand(a){return a[Math.floor(Math.random()*a.length)];}
 
 //==================== FLOW ====================
 function newGame(){
+  stats={facts:{},totalAttempts:0,totalCorrect:0,bestDepth:0};tick=0;
   game={depth:1,room:0,roomsPerHang:3,maxHp:4,hp:4,coins:0,shields:0,swordLevel:0,healLevel:0,timeBonus:0,
     heroName:rand(HERO_NAMES),monster:null,bossMode:false,shopReturn:"s-game"};
   lastKey=null;
@@ -782,12 +782,12 @@ function answer(choice,btn){
   if(locked)return;locked=true;stopTimer();
   const el=performance.now()-game.qStart;const f=game.q.key.split("x").map(Number);const fact=getFact(f[0],f[1]);
   fact.seen++;fact.last=tick;tick++;stats.totalAttempts++;
-  if(choice.ok){fact.correct++;fact.sumT+=Math.min(el,SLOW_MS*1.5);stats.totalCorrect++;btn.classList.add("correct");if(el>timeLimit*0.75)fact.slowCorrect++;saveStats();correctHit();}
-  else{fact.wrong++;btn.classList.add("wrong");revealCorrect();saveStats();wrongHit(false);}
+  if(choice.ok){fact.correct++;fact.sumT+=Math.min(el,SLOW_MS*1.5);stats.totalCorrect++;btn.classList.add("correct");if(el>timeLimit*0.75)fact.slowCorrect++;correctHit();}
+  else{fact.wrong++;btn.classList.add("wrong");revealCorrect();wrongHit(false);}
 }
 function onTimeout(){if(locked)return;locked=true;stopTimer();
   const f=game.q.key.split("x").map(Number);const fact=getFact(f[0],f[1]);
-  fact.seen++;fact.timeout++;fact.last=tick;tick++;stats.totalAttempts++;revealCorrect();saveStats();wrongHit(true);}
+  fact.seen++;fact.timeout++;fact.last=tick;tick++;stats.totalAttempts++;revealCorrect();wrongHit(true);}
 function revealCorrect(){const ok=String(game.q.choices.find(c=>c.ok).v);[...$("answers").children].forEach(b=>{if(b.textContent===ok)b.classList.add("correct");});}
 
 function spawnBurst(el,color){
@@ -848,7 +848,7 @@ function applyReward(id){
   renderTop();show("s-game");startRoom();
 }
 function hangCleared(){
-  sfx.win();game.coins+=50;if(game.depth>stats.bestDepth){stats.bestDepth=game.depth;saveStats();}game.depth++;
+  sfx.win();game.coins+=50;if(game.depth>stats.bestDepth){stats.bestDepth=game.depth;}game.depth++;
   $("hangTitle").textContent="Hạ gục "+game.monster.name+"! 🏆";
   $("hangMsg").textContent="Hang sâu hơn sẽ có quái khó hơn. Em muốn đi tiếp hay nghỉ?";show("s-hang");
 }
@@ -882,7 +882,7 @@ function buyItem(it){
   else if(it.id==="heal")game.healLevel++;
   renderTop(); renderShop();
 }
-function gameOver(){sfx.lose();stopMusic();if(game.depth>stats.bestDepth){stats.bestDepth=game.depth;saveStats();}showEnd(false);}
+function gameOver(){sfx.lose();stopMusic();if(game.depth>stats.bestDepth){stats.bestDepth=game.depth;}showEnd(false);}
 
 function tableWeakness(){
   const scores=[];
@@ -918,7 +918,7 @@ function showEnd(rested){
 }
 function victory(){
   sfx.win();stopMusic();game.coins+=100;
-  if(game.depth>=stats.bestDepth){stats.bestDepth=game.depth;saveStats();}
+  if(game.depth>=stats.bestDepth){stats.bestDepth=game.depth;}
   show("s-victory");
   const acc=stats.totalAttempts?Math.round(100*stats.totalCorrect/stats.totalAttempts):0;
   $("vicStats").innerHTML=`<div class="stat"><b>${stats.totalCorrect}</b>câu đúng</div><div class="stat"><b>${acc}%</b>chính xác</div><div class="stat"><b>${game.coins}</b>xu</div>`;
@@ -939,7 +939,6 @@ $("shopBtnHang").onclick=()=>{sfx.click();openShop("s-hang");};
 $("shopBackBtn").onclick=()=>{sfx.click();show(game.shopReturn);};
 $("shopCloseBtn").onclick=()=>{sfx.click();show(game.shopReturn);};
 $("muteBtn").onclick=()=>{sound=!sound;$("muteBtn").textContent=sound?"🔊":"🔇";if(sound){sfx.click();startMusic();}else stopMusic();};
-$("resetLink").onclick=()=>{if(confirm("Xoá toàn bộ tiến trình học của bé?")){localStorage.removeItem(STORE_KEY);stats=loadStats();alert("Đã xoá. Bắt đầu lại từ đầu nhé!");}};
 
 //==================== INIT ====================
 stats=loadStats();
